@@ -32,8 +32,8 @@ function ItemGrid({ items = [], emptyText = 'Sin ítems' }) {
 }
 
 /**
- * Pelea + participantes (nombres) + loot de víctimas / looters.
- * Sin grids de builds aliadas.
+ * Pelea + participantes + loot por persona.
+ * Sin builds de aliados.
  */
 export default function CombatLoot({ events = [] }) {
   const fights = useMemo(() => {
@@ -53,7 +53,6 @@ export default function CombatLoot({ events = [] }) {
       const g = groups.get(key);
       g.kills.push(ev);
 
-      // Participantes de party (nombres; sin builds)
       const partyList = Array.isArray(ev.party) && ev.party.length
         ? ev.party
         : [
@@ -75,7 +74,7 @@ export default function CombatLoot({ events = [] }) {
             averageItemPower: p.averageItemPower || 0,
             damageDone: p.damageDone || 0,
             supportHealingDone: p.supportHealingDone || 0,
-            isKiller: false,
+            isLooter: false,
             killCount: 0,
           });
         } else {
@@ -95,7 +94,7 @@ export default function CombatLoot({ events = [] }) {
       if (looter?.id) {
         const part = g.participantsById.get(looter.id);
         if (part) {
-          part.isKiller = true;
+          part.isLooter = true;
           part.killCount += 1;
         }
 
@@ -107,8 +106,7 @@ export default function CombatLoot({ events = [] }) {
             killCount: 0,
             fame: 0,
             bags: [],
-            allInventory: [],
-            allGear: [],
+            allItems: [],
           });
         }
         const entry = g.lootersById.get(looter.id);
@@ -123,17 +121,16 @@ export default function CombatLoot({ events = [] }) {
           ...i,
           fromVictim: ev.victim?.name,
         }));
+        const items = [...inv, ...gear];
 
         entry.bags.push({
           victimName: ev.victim?.name,
           victimGuild: ev.victim?.guildName,
           eventId: ev.eventId,
           fame: ev.totalFame,
-          inventory: inv,
-          gear,
+          items,
         });
-        entry.allInventory.push(...inv);
-        entry.allGear.push(...gear);
+        entry.allItems.push(...items);
       }
     }
 
@@ -146,13 +143,10 @@ export default function CombatLoot({ events = [] }) {
           (a, b) => b.killCount - a.killCount || b.fame - a.fame
         );
         const participants = [...g.participantsById.values()].sort((a, b) => {
-          if (a.isKiller !== b.isKiller) return a.isKiller ? -1 : 1;
+          if (a.isLooter !== b.isLooter) return a.isLooter ? -1 : 1;
           return (b.damageDone || 0) - (a.damageDone || 0);
         });
-        const totalLootItems = looters.reduce(
-          (s, l) => s + l.allInventory.length + l.allGear.length,
-          0
-        );
+        const totalLootItems = looters.reduce((s, l) => s + l.allItems.length, 0);
         const victims = kills
           .map((k) => k.victim?.name)
           .filter(Boolean)
@@ -188,8 +182,7 @@ export default function CombatLoot({ events = [] }) {
           Combat · Loot
         </h2>
         <p className="text-sm text-[#a89b84]">
-          Pelea, participantes y drop del muerto. La API no dice qué ítem se
-          recogió: solo quién tiene derechos de loot y qué llevaba la víctima.
+          Pelea, participantes y qué looteó cada uno (bag + set del muerto).
         </p>
       </header>
 
@@ -225,7 +218,7 @@ export default function CombatLoot({ events = [] }) {
                       </span>
                       <span className="inline-flex items-center gap-1 text-[#ffd700] border border-[#d4af37]/30 rounded px-2 py-0.5">
                         <Package className="w-3 h-3" />
-                        {fight.totalLootItems} ítems
+                        {fight.looters.length} looters · {fight.totalLootItems} ítems
                       </span>
                       <span className="text-[#a89b84]">{formatDate(fight.endTime)}</span>
                       <span className="text-[#ffd700]">
@@ -236,11 +229,13 @@ export default function CombatLoot({ events = [] }) {
                       Party:{' '}
                       {fight.participants.map((p) => p.name).join(' · ') || '—'}
                     </p>
-                    {fight.victims.length > 0 ? (
+                    {fight.looters.length > 0 ? (
                       <p className="text-xs text-[#a89b84] truncate">
-                        Víctimas:{' '}
-                        <span className="text-[#c23b4a]">
-                          {fight.victims.join(' · ')}
+                        Lootearon:{' '}
+                        <span className="text-[#ffd700]">
+                          {fight.looters
+                            .map((l) => `${l.name}(${l.allItems.length})`)
+                            .join(' · ')}
                         </span>
                       </p>
                     ) : null}
@@ -255,7 +250,6 @@ export default function CombatLoot({ events = [] }) {
 
               {open ? (
                 <div className="px-4 pb-4 space-y-5 bg-[#0c0a08]/50">
-                  {/* Participantes — solo nombres, sin builds */}
                   <div className="space-y-2">
                     <h3 className="font-[family-name:var(--font-display)] text-sm gold-text flex items-center gap-2">
                       <Users className="w-4 h-4" />
@@ -266,7 +260,7 @@ export default function CombatLoot({ events = [] }) {
                         <div
                           key={p.id}
                           className={`rounded border px-3 py-1.5 text-sm ${
-                            p.isKiller
+                            p.isLooter
                               ? 'border-[#d4af37]/50 bg-[#d4af37]/10'
                               : 'border-[#3d3426] bg-[#14110c]'
                           }`}
@@ -281,9 +275,9 @@ export default function CombatLoot({ events = [] }) {
                             .join(' · ')}
                         >
                           <span className="text-[#e8dcc3] font-medium">{p.name}</span>
-                          {p.isKiller ? (
+                          {p.isLooter ? (
                             <span className="ml-1.5 text-[10px] uppercase tracking-wider text-[#ffd700]">
-                              derechos{p.killCount > 1 ? `×${p.killCount}` : ''}
+                              looteó{p.killCount > 1 ? `×${p.killCount}` : ''}
                             </span>
                           ) : null}
                           {p.guildName ? (
@@ -299,98 +293,84 @@ export default function CombatLoot({ events = [] }) {
                     </div>
                   </div>
 
-                  {/* Drop del cadáver + derechos de loot */}
                   <div className="space-y-3">
                     <h3 className="font-[family-name:var(--font-display)] text-sm gold-text flex items-center gap-2">
                       <Package className="w-4 h-4" />
-                      Drop del muerto
+                      Quién looteó qué
                     </h3>
-                    <p className="text-xs text-[#6b5d4a]">
-                      Albion no reporta qué se recogió del suelo. Abajo está
-                      todo lo que llevaba el muerto (bag + set). El killer tiene
-                      derechos de loot sobre ese cadáver; no confirma que lo
-                      haya agarrado todo.
-                    </p>
 
-                    {fight.kills.map((kill) => {
-                      const looter = kill.looter || kill.killer;
-                      const inv = kill.loot || [];
-                      const gear = kill.victimGear || [];
-                      const dropCount = inv.length + gear.length;
-                      return (
-                        <div
-                          key={kill.eventId}
-                          className="rounded-lg border border-[#3d3426] p-4 space-y-3"
-                        >
-                          <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <div className="space-y-0.5">
-                              <p className="text-sm">
-                                <span className="text-[#c23b4a] font-semibold">
-                                  {kill.victim?.name || 'Víctima'}
+                    {fight.looters.map((looter) => (
+                      <div
+                        key={looter.id}
+                        className="rounded-lg border border-[#d4af37]/35 bg-[#d4af37]/05 p-4 space-y-3"
+                      >
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-base">
+                            <span className="font-[family-name:var(--font-display)] text-lg gold-text">
+                              {looter.name}
+                            </span>
+                            <span className="text-[#e8dcc3]"> looteó:</span>
+                          </p>
+                          <span className="text-xs text-[#a89b84]">
+                            {looter.allItems.length} ítems · +
+                            {formatCompact(looter.fame)} fame
+                          </span>
+                        </div>
+
+                        <ItemGrid
+                          items={looter.allItems}
+                          emptyText="Sin ítems en el cadáver"
+                        />
+
+                        {looter.bags.length > 1
+                          ? looter.bags.map((bag) => (
+                              <div
+                                key={`${looter.id}-${bag.eventId}`}
+                                className="rounded border border-[#3d3426] p-3 space-y-2"
+                              >
+                                <p className="text-xs text-[#a89b84]">
+                                  De{' '}
+                                  <span className="text-[#c23b4a] font-semibold">
+                                    {bag.victimName}
+                                  </span>
+                                  {bag.victimGuild ? (
+                                    <span className="text-[#6b5d4a]">
+                                      {' '}
+                                      ({bag.victimGuild})
+                                    </span>
+                                  ) : null}
+                                  <span>
+                                    {' '}
+                                    · +{formatNumber(bag.fame)} fame
+                                  </span>
+                                </p>
+                                <ItemGrid
+                                  items={bag.items}
+                                  emptyText="Sin ítems"
+                                />
+                              </div>
+                            ))
+                          : looter.bags[0] ? (
+                              <p className="text-xs text-[#a89b84]">
+                                De{' '}
+                                <span className="text-[#c23b4a]">
+                                  {looter.bags[0].victimName}
                                 </span>
-                                {kill.victim?.guildName ? (
+                                {looter.bags[0].victimGuild ? (
                                   <span className="text-[#6b5d4a]">
                                     {' '}
-                                    ({kill.victim.guildName})
+                                    ({looter.bags[0].victimGuild})
                                   </span>
                                 ) : null}
-                                <span className="text-[#a89b84]"> murió</span>
                               </p>
-                              <p className="text-xs text-[#a89b84]">
-                                Derechos de loot:{' '}
-                                <span className="text-[#ffd700]">
-                                  {looter?.name || '—'}
-                                </span>
-                                <span className="text-[#6b5d4a]">
-                                  {' '}
-                                  · {dropCount} ítems en el cadáver
-                                </span>
-                              </p>
-                            </div>
-                            <span className="text-xs text-[#a89b84]">
-                              +{formatNumber(kill.totalFame)} fame
-                            </span>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider text-[#d4af37] mb-1">
-                              Bag (inventario al morir)
-                            </p>
-                            <ItemGrid items={inv} emptyText="Bag vacío en la API" />
-                          </div>
-                          {gear.length > 0 ? (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider text-[#a89b84] mb-1">
-                                Set equipado al morir (también cae al suelo)
-                              </p>
-                              <ItemGrid items={gear} />
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {fight.looters.length > 1 ? (
-                    <div className="space-y-2">
-                      <h3 className="font-[family-name:var(--font-display)] text-sm gold-text">
-                        Derechos de loot por killer
-                      </h3>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        {fight.looters.map((l) => (
-                          <span
-                            key={l.id}
-                            className="rounded border border-[#d4af37]/30 px-2 py-1 text-[#e8dcc3]"
-                          >
-                            {l.name}: {l.killCount} cadáver
-                            {l.killCount === 1 ? '' : 'es'} ·{' '}
-                            {l.allInventory.length + l.allGear.length} ítems
-                            disponibles
-                          </span>
-                        ))}
+                            ) : null}
                       </div>
-                    </div>
-                  ) : null}
+                    ))}
+
+                    {fight.looters.length === 0 ? (
+                      <p className="text-sm text-[#6b5d4a]">Nadie looteó en esta pelea.</p>
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
             </li>
