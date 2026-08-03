@@ -188,7 +188,8 @@ export default function CombatLoot({ events = [] }) {
           Combat · Loot
         </h2>
         <p className="text-sm text-[#a89b84]">
-          Pelea, participantes y loot. Sin builds de aliados.
+          Pelea, participantes y drop del muerto. La API no dice qué ítem se
+          recogió: solo quién tiene derechos de loot y qué llevaba la víctima.
         </p>
       </header>
 
@@ -282,7 +283,7 @@ export default function CombatLoot({ events = [] }) {
                           <span className="text-[#e8dcc3] font-medium">{p.name}</span>
                           {p.isKiller ? (
                             <span className="ml-1.5 text-[10px] uppercase tracking-wider text-[#ffd700]">
-                              loot{p.killCount > 1 ? `×${p.killCount}` : ''}
+                              derechos{p.killCount > 1 ? `×${p.killCount}` : ''}
                             </span>
                           ) : null}
                           {p.guildName ? (
@@ -298,39 +299,54 @@ export default function CombatLoot({ events = [] }) {
                     </div>
                   </div>
 
-                  {/* Loot por víctima / looter */}
+                  {/* Drop del cadáver + derechos de loot */}
                   <div className="space-y-3">
                     <h3 className="font-[family-name:var(--font-display)] text-sm gold-text flex items-center gap-2">
                       <Package className="w-4 h-4" />
-                      Loot del muerto · quién looteó
+                      Drop del muerto
                     </h3>
+                    <p className="text-xs text-[#6b5d4a]">
+                      Albion no reporta qué se recogió del suelo. Abajo está
+                      todo lo que llevaba el muerto (bag + set). El killer tiene
+                      derechos de loot sobre ese cadáver; no confirma que lo
+                      haya agarrado todo.
+                    </p>
 
                     {fight.kills.map((kill) => {
                       const looter = kill.looter || kill.killer;
                       const inv = kill.loot || [];
                       const gear = kill.victimGear || [];
+                      const dropCount = inv.length + gear.length;
                       return (
                         <div
                           key={kill.eventId}
                           className="rounded-lg border border-[#3d3426] p-4 space-y-3"
                         >
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <p className="text-sm">
-                              <span className="text-[#c23b4a] font-semibold">
-                                {kill.victim?.name || 'Víctima'}
-                              </span>
-                              {kill.victim?.guildName ? (
+                            <div className="space-y-0.5">
+                              <p className="text-sm">
+                                <span className="text-[#c23b4a] font-semibold">
+                                  {kill.victim?.name || 'Víctima'}
+                                </span>
+                                {kill.victim?.guildName ? (
+                                  <span className="text-[#6b5d4a]">
+                                    {' '}
+                                    ({kill.victim.guildName})
+                                  </span>
+                                ) : null}
+                                <span className="text-[#a89b84]"> murió</span>
+                              </p>
+                              <p className="text-xs text-[#a89b84]">
+                                Derechos de loot:{' '}
+                                <span className="text-[#ffd700]">
+                                  {looter?.name || '—'}
+                                </span>
                                 <span className="text-[#6b5d4a]">
                                   {' '}
-                                  ({kill.victim.guildName})
+                                  · {dropCount} ítems en el cadáver
                                 </span>
-                              ) : null}
-                              <span className="text-[#a89b84]"> murió · </span>
-                              <span className="text-[#ffd700]">
-                                {looter?.name || '—'}
-                              </span>
-                              <span className="text-[#a89b84]"> looteó</span>
-                            </p>
+                              </p>
+                            </div>
                             <span className="text-xs text-[#a89b84]">
                               +{formatNumber(kill.totalFame)} fame
                             </span>
@@ -338,14 +354,14 @@ export default function CombatLoot({ events = [] }) {
 
                           <div>
                             <p className="text-[10px] uppercase tracking-wider text-[#d4af37] mb-1">
-                              Inventario / bag de la víctima
+                              Bag (inventario al morir)
                             </p>
                             <ItemGrid items={inv} emptyText="Bag vacío en la API" />
                           </div>
                           {gear.length > 0 ? (
                             <div>
                               <p className="text-[10px] uppercase tracking-wider text-[#a89b84] mb-1">
-                                Equipo de la víctima
+                                Set equipado al morir (también cae al suelo)
                               </p>
                               <ItemGrid items={gear} />
                             </div>
@@ -355,11 +371,10 @@ export default function CombatLoot({ events = [] }) {
                     })}
                   </div>
 
-                  {/* Resumen por looter */}
                   {fight.looters.length > 1 ? (
                     <div className="space-y-2">
                       <h3 className="font-[family-name:var(--font-display)] text-sm gold-text">
-                        Resumen por looter
+                        Derechos de loot por killer
                       </h3>
                       <div className="flex flex-wrap gap-2 text-xs">
                         {fight.looters.map((l) => (
@@ -367,9 +382,10 @@ export default function CombatLoot({ events = [] }) {
                             key={l.id}
                             className="rounded border border-[#d4af37]/30 px-2 py-1 text-[#e8dcc3]"
                           >
-                            {l.name}: {l.killCount} kill
-                            {l.killCount === 1 ? '' : 's'} ·{' '}
+                            {l.name}: {l.killCount} cadáver
+                            {l.killCount === 1 ? '' : 'es'} ·{' '}
                             {l.allInventory.length + l.allGear.length} ítems
+                            disponibles
                           </span>
                         ))}
                       </div>
