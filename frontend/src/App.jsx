@@ -6,6 +6,8 @@ import MembersTable from './components/MembersTable';
 import Killboard from './components/Killboard';
 import Battles from './components/Battles';
 import MemberBuilds from './components/MemberBuilds';
+import CombatLoot from './components/CombatLoot';
+import RecruitHero from './components/RecruitHero';
 import {
   BattlesPreview,
   RecentKillsPreview,
@@ -13,12 +15,14 @@ import {
 } from './components/DashboardExtras';
 
 const GUILD_NAME = 'African Push';
+const DISCORD_URL = 'https://discord.gg/HKWb7PPsXD';
 
 const TABS = [
   { id: 'overview', label: 'Dashboard' },
   { id: 'members', label: 'Miembros' },
   { id: 'kills', label: 'Killboard' },
   { id: 'battles', label: 'Batallas' },
+  { id: 'loot', label: 'Combat Loot' },
 ];
 
 export default function App() {
@@ -98,23 +102,31 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-[#1f2a44] bg-[#05060a]/90 backdrop-blur sticky top-0 z-20">
+      <header className="border-b border-[#3d3426] bg-[#0c0a08]/92 backdrop-blur sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] tracking-[0.35em] uppercase text-[#00f0ff] mb-1">
-              Albion Online · América West · RGB
+            <p className="text-[11px] tracking-[0.35em] uppercase text-[#d4af37] mb-1">
+              Albion Online · América West
             </p>
-            <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl neon-text">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl gold-text">
               {guildName}
             </h1>
-            <p className="text-sm text-[#8b9bb8]">
+            <p className="text-sm text-[#a89b84]">
               {stats?.alliance ? `Alianza: ${stats.alliance} · ` : ''}
               {formatNumber(memberCount)} miembros
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <nav className="flex flex-wrap gap-1 p-1 rounded-lg bg-[#05060a] border border-[#1f2a44]">
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 text-xs uppercase tracking-wider rounded-md bg-[#d4af37]/15 text-[#ffd700] border border-[#d4af37]/40 hover:bg-[#d4af37]/25"
+            >
+              Discord
+            </a>
+            <nav className="flex flex-wrap gap-1 p-1 rounded-lg bg-[#0c0a08] border border-[#3d3426]">
               {TABS.map((t) => (
                 <button
                   key={t.id}
@@ -122,8 +134,8 @@ export default function App() {
                   onClick={() => setTab(t.id)}
                   className={`px-3 py-1.5 text-xs uppercase tracking-wider rounded-md transition ${
                     tab === t.id
-                      ? 'bg-[#ff2bd6]/15 text-[#ff2bd6] shadow-[0_0_16px_rgba(255,43,214,0.25)]'
-                      : 'text-[#8b9bb8] hover:text-[#00f0ff]'
+                      ? 'bg-[#d4af37]/15 text-[#ffd700]'
+                      : 'text-[#a89b84] hover:text-[#ffd700]'
                   }`}
                 >
                   {t.label}
@@ -134,7 +146,7 @@ export default function App() {
               type="button"
               onClick={loadAll}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#00f0ff]/40 text-sm text-[#00f0ff] hover:bg-[#00f0ff]/10 disabled:opacity-50 shadow-[0_0_16px_rgba(0,240,255,0.15)]"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#d4af37]/40 text-sm text-[#ffd700] hover:bg-[#d4af37]/10 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -148,19 +160,17 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <RecruitHero guildName={guildName} memberCount={memberCount} />
+
         {error ? (
-          <div className="panel rounded-lg border border-[#b91c1c]/50 p-4 text-[#fca5a5]">
+          <div className="panel rounded-lg border border-[#c23b4a]/50 p-4 text-[#f5a8b0]">
             <p className="font-semibold">Error al cargar la API</p>
             <p className="text-sm mt-1 opacity-90">{error}</p>
-            <p className="text-xs mt-2 text-[#9ca3af]">
-              Reinicia el backend:{' '}
-              <code>cd backend && npm run dev</code>
-            </p>
           </div>
         ) : null}
 
         {loading && !stats && members.length === 0 ? (
-          <div className="flex items-center justify-center py-24 text-[#9ca3af] gap-3">
+          <div className="flex items-center justify-center py-24 text-[#a89b84] gap-3">
             <Loader2 className="w-6 h-6 animate-spin text-[#d4af37]" />
             Cargando datos de {GUILD_NAME}…
           </div>
@@ -218,35 +228,35 @@ export default function App() {
 
             <section className="grid lg:grid-cols-3 gap-4">
               <div className="panel rounded-lg p-5 animate-fade-up">
-                <div className="flex items-center gap-2 mb-3 text-[#22c55e]">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-[#3ecf6e]" />
                   <h3 className="font-[family-name:var(--font-display)] text-[#d4af37]">
                     Resumen de {GUILD_NAME}
                   </h3>
                 </div>
-                <ul className="space-y-2 text-sm text-[#d1d5db]">
-                  <li className="flex justify-between border-b border-[#2e2e36] pb-2">
-                    <span className="text-[#9ca3af]">Death Fame</span>
-                    <span className="text-[#f87171]">{formatNumber(stats?.deathFame ?? 0)}</span>
+                <ul className="space-y-2 text-sm text-[#e8dcc3]">
+                  <li className="flex justify-between border-b border-[#3d3426] pb-2">
+                    <span className="text-[#a89b84]">Death Fame</span>
+                    <span className="text-[#c23b4a]">{formatNumber(stats?.deathFame ?? 0)}</span>
                   </li>
-                  <li className="flex justify-between border-b border-[#2e2e36] pb-2">
-                    <span className="text-[#9ca3af]">PvP medio / miembro</span>
+                  <li className="flex justify-between border-b border-[#3d3426] pb-2">
+                    <span className="text-[#a89b84]">PvP medio / miembro</span>
                     <span className="text-[#d4af37]">{formatCompact(avgMemberPvp)}</span>
                   </li>
-                  <li className="flex justify-between border-b border-[#2e2e36] pb-2">
-                    <span className="text-[#9ca3af]">GvG Fame</span>
+                  <li className="flex justify-between border-b border-[#3d3426] pb-2">
+                    <span className="text-[#a89b84]">GvG Fame</span>
                     <span>{formatNumber(stats?.gvgFame ?? 0)}</span>
                   </li>
                   <li className="flex justify-between">
-                    <span className="text-[#9ca3af]">Eventos en killboard</span>
-                    <span className="text-[#22c55e]">{events.length}</span>
+                    <span className="text-[#a89b84]">Eventos en killboard</span>
+                    <span className="text-[#3ecf6e]">{events.length}</span>
                   </li>
                 </ul>
               </div>
 
               <div className="panel rounded-lg p-5 animate-fade-up delay-1 lg:col-span-2">
                 <div className="flex items-center gap-2 mb-3">
-                  <Skull className="w-4 h-4 text-[#b91c1c]" />
+                  <Skull className="w-4 h-4 text-[#c23b4a]" />
                   <h3 className="font-[family-name:var(--font-display)] text-[#d4af37]">
                     Última pelea
                   </h3>
@@ -254,32 +264,30 @@ export default function App() {
                 {events[0] ? (
                   <div className="grid sm:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#22c55e]">Killer</p>
-                      <p className="text-[#86efac] font-semibold text-lg">{events[0].killer?.name}</p>
-                      <p className="text-[#9ca3af]">IP {events[0].killer?.averageItemPower}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-[#3ecf6e]">Killer</p>
+                      <p className="text-[#3ecf6e] font-semibold text-lg">{events[0].killer?.name}</p>
+                      <p className="text-[#a89b84]">IP {events[0].killer?.averageItemPower}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] uppercase tracking-wider text-[#9ca3af]">Fame</p>
-                      <p className="font-[family-name:var(--font-display)] text-2xl text-[#d4af37]">
+                      <p className="text-[10px] uppercase tracking-wider text-[#a89b84]">Fame</p>
+                      <p className="font-[family-name:var(--font-display)] text-2xl gold-text">
                         +{formatNumber(events[0].totalFame)}
                       </p>
                     </div>
                     <div className="sm:text-right">
-                      <p className="text-[10px] uppercase tracking-wider text-[#f87171]">Victim</p>
-                      <p className="text-[#fca5a5] font-semibold text-lg">{events[0].victim?.name}</p>
-                      <p className="text-[#9ca3af]">IP {events[0].victim?.averageItemPower}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-[#c23b4a]">Victim</p>
+                      <p className="text-[#c23b4a] font-semibold text-lg">{events[0].victim?.name}</p>
+                      <p className="text-[#a89b84]">IP {events[0].victim?.averageItemPower}</p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-[#6b7280]">Sin pelea reciente.</p>
+                  <p className="text-sm text-[#6b5d4a]">Sin pelea reciente.</p>
                 )}
               </div>
             </section>
 
             <TopRankings members={members} />
-
             <MemberBuilds members={builds} eventsScanned={eventsScanned} />
-
             <div className="grid lg:grid-cols-2 gap-4">
               <RecentKillsPreview events={events} onOpenKillboard={() => setTab('kills')} />
               <BattlesPreview battles={battles} onOpenBattles={() => setTab('battles')} />
@@ -290,10 +298,14 @@ export default function App() {
         {tab === 'members' ? <MembersTable members={members} /> : null}
         {tab === 'kills' ? <Killboard events={events} source={killsSource} /> : null}
         {tab === 'battles' ? <Battles battles={battles} /> : null}
+        {tab === 'loot' ? <CombatLoot events={events} /> : null}
       </main>
 
-      <footer className="max-w-7xl mx-auto px-4 py-8 text-center text-xs text-[#6b7280]">
-        {GUILD_NAME} · América West (<code>live_us</code>) · API pública de Albion Online
+      <footer className="max-w-7xl mx-auto px-4 py-8 text-center text-xs text-[#6b5d4a]">
+        {GUILD_NAME} · América West ·{' '}
+        <a href={DISCORD_URL} className="text-[#d4af37] hover:underline" target="_blank" rel="noreferrer">
+          Discord reclutamiento
+        </a>
       </footer>
     </div>
   );

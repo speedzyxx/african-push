@@ -30,7 +30,7 @@ function Slot({ item, label }) {
           referrerPolicy="no-referrer"
         />
       </div>
-      <span className="text-[10px] uppercase tracking-wider text-[#8b9bb8]">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-[#a89b84]">{label}</span>
     </div>
   );
 }
@@ -40,9 +40,9 @@ export default function Equipment({ player, side = 'killer' }) {
 
   const border =
     side === 'killer'
-      ? 'border-[#39ff14]/35 shadow-[0_0_20px_rgba(57,255,20,0.12)]'
-      : 'border-[#ff3b6b]/35 shadow-[0_0_20px_rgba(255,59,107,0.12)]';
-  const titleColor = side === 'killer' ? 'text-[#39ff14]' : 'text-[#ff3b6b]';
+      ? 'border-[#3ecf6e]/40 shadow-[0_0_20px_rgba(62,207,110,0.1)]'
+      : 'border-[#c23b4a]/40 shadow-[0_0_20px_rgba(194,59,74,0.1)]';
+  const titleColor = side === 'killer' ? 'text-[#3ecf6e]' : 'text-[#c23b4a]';
 
   const twoHandedMain = isTwoHanded(player.equipment?.MainHand?.uniqueName);
   const slots = ALL_SLOTS.filter(({ key }) => {
@@ -58,7 +58,7 @@ export default function Equipment({ player, side = 'killer' }) {
         <h4 className={`font-[family-name:var(--font-display)] text-sm ${titleColor}`}>
           {player.name}
         </h4>
-        <span className="text-xs text-[#8b9bb8]">
+        <span className="text-xs text-[#a89b84]">
           IP {player.averageItemPower} · {filled} ítems
           {twoHandedMain ? ' · 2H' : ''}
           {player.guildName ? ` · ${player.guildName}` : ''}

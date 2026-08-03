@@ -12,7 +12,7 @@ export default function MemberBuilds({ members = [], eventsScanned = 0 }) {
     <section className="panel rounded-lg overflow-hidden animate-fade-up">
       <header className="p-4 border-b border-[#2e2e36] flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl neon-text">
+          <h2 className="font-[family-name:var(--font-display)] text-xl gold-text">
             Últimas builds · PvP
           </h2>
           <p className="text-sm text-[#8b9bb8]">

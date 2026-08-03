@@ -194,6 +194,14 @@ async function loadGuildEventsRaw(limit = 50) {
 }
 
 function mapEvent(event) {
+  const victimInv = Array.isArray(event.Victim?.Inventory)
+    ? event.Victim.Inventory.filter(Boolean).map((item) => ({
+        uniqueName: item.Type ?? item.UniqueName ?? null,
+        quality: item.Quality ?? 0,
+        count: item.Count ?? 1,
+      }))
+    : [];
+
   return {
     eventId: event.EventId,
     timestamp: event.TimeStamp,
@@ -202,6 +210,7 @@ function mapEvent(event) {
     victim: normalizeCombatant(event.Victim),
     participants: (event.Participants ?? []).map(normalizeCombatant),
     groupMemberCount: event.groupMemberCount ?? event.numberOfParticipants ?? 1,
+    loot: victimInv.filter((i) => i.uniqueName),
     source: 'events',
   };
 }
@@ -435,7 +444,7 @@ app.get('/api/guild-battles', async (_req, res) => {
     try {
       const day = await fetchAlbion(
         `/battles?range=day&offset=0&limit=20&sort=recent&guildId=${GUILD_ID}`,
-        'guild-battles-day-recent-v1',
+        'guild-battles-day-recent-v2',
         { ttl: 60 }
       );
       raw = day.data;
@@ -486,6 +495,30 @@ app.get('/api/guild-battles', async (_req, res) => {
         const topPlayers = [...playerList]
           .sort((a, c) => c.killFame - a.killFame)
           .slice(0, 10);
+
+        const topKillersOverall = [...playerList]
+          .sort((a, c) => c.kills - a.kills || c.killFame - a.killFame)
+          .slice(0, 5);
+
+        const topFameOverall = [...playerList]
+          .sort((a, c) => c.killFame - a.killFame)
+          .slice(0, 5);
+
+        const ourTopKillers = [...ourPlayers]
+          .sort((a, c) => c.kills - a.kills || c.killFame - a.killFame)
+          .slice(0, 5);
+
+        const ourMvp =
+          [...ourPlayers].sort(
+            (a, c) => c.killFame - a.killFame || c.kills - a.kills
+          )[0] || null;
+
+        const ourTotals = {
+          kills: ourPlayers.reduce((s, p) => s + (p.kills || 0), 0),
+          deaths: ourPlayers.reduce((s, p) => s + (p.deaths || 0), 0),
+          killFame: ourPlayers.reduce((s, p) => s + (p.killFame || 0), 0),
+          players: ourPlayers.length,
+        };
 
         const ourGuildRaw = b.guilds?.[GUILD_ID] ?? null;
         const ourGuild = ourGuildRaw
@@ -602,6 +635,11 @@ app.get('/api/guild-battles', async (_req, res) => {
           topGuilds: guildList.slice(0, 8),
           ourPlayers,
           topPlayers,
+          ourMvp,
+          ourTotals,
+          topKillersOverall,
+          topFameOverall,
+          ourTopKillers,
         };
       })
       .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));

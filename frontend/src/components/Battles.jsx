@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, MapPin, Shield, Swords } from 'lucide-react';
+import { ChevronDown, Crown, MapPin, Shield, Swords } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -15,21 +15,21 @@ import {
 } from 'recharts';
 import { formatCompact, formatDate, formatNumber } from '../utils/api';
 
-const NEON = ['#00f0ff', '#ff2bd6', '#b6ff2e', '#ffd44d', '#39ff14', '#ff3b6b', '#7c5cff', '#2ee6a6'];
+const GOLD_PALETTE = ['#ffd700', '#d4af37', '#c9a227', '#8a6d1d', '#3ecf6e', '#c23b4a', '#e8dcc3', '#a89b84'];
 
-function MiniTable({ title, rows, accent = 'cyan' }) {
+function MiniTable({ title, rows, accent = 'gold' }) {
   const titleColor =
-    accent === 'kill' ? 'text-[#39ff14]' : accent === 'magenta' ? 'text-[#ff2bd6]' : 'text-[#00f0ff]';
+    accent === 'kill' ? 'text-[#3ecf6e]' : accent === 'death' ? 'text-[#c23b4a]' : 'text-[#d4af37]';
 
   return (
-    <div className="rounded-lg border border-[#1f2a44] bg-[#05060a]/70 overflow-hidden">
-      <div className={`px-3 py-2 text-xs uppercase tracking-[0.15em] ${titleColor} border-b border-[#1f2a44]`}>
+    <div className="rounded-lg border border-[#3d3426] bg-[#0c0a08]/70 overflow-hidden">
+      <div className={`px-3 py-2 text-xs uppercase tracking-[0.15em] ${titleColor} border-b border-[#3d3426]`}>
         {title}
       </div>
       <div className="max-h-56 overflow-y-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-[#5b6b88]">
+            <tr className="text-[10px] uppercase tracking-wider text-[#6b5d4a]">
               <th className="px-3 py-2 text-left font-medium">Nombre</th>
               <th className="px-3 py-2 text-right font-medium">K</th>
               <th className="px-3 py-2 text-right font-medium">D</th>
@@ -38,23 +38,23 @@ function MiniTable({ title, rows, accent = 'cyan' }) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.id || row.name} className="border-t border-[#1f2a44]/70">
+              <tr key={row.id || row.name} className="border-t border-[#3d3426]/70">
                 <td className="px-3 py-1.5">
-                  <p className="font-semibold text-[#f4f7ff] truncate max-w-[160px]">{row.name}</p>
+                  <p className="font-semibold text-[#f5efe3] truncate max-w-[160px]">{row.name}</p>
                   {row.alliance || row.guildName || row.allianceName ? (
-                    <p className="text-[11px] text-[#5b6b88] truncate">
+                    <p className="text-[11px] text-[#6b5d4a] truncate">
                       {row.alliance || row.allianceName || row.guildName}
                     </p>
                   ) : null}
                 </td>
-                <td className="px-3 py-1.5 text-right text-[#39ff14]">{formatNumber(row.kills)}</td>
-                <td className="px-3 py-1.5 text-right text-[#ff3b6b]">{formatNumber(row.deaths)}</td>
-                <td className="px-3 py-1.5 text-right text-[#ffd44d]">{formatCompact(row.killFame)}</td>
+                <td className="px-3 py-1.5 text-right text-[#3ecf6e]">{formatNumber(row.kills)}</td>
+                <td className="px-3 py-1.5 text-right text-[#c23b4a]">{formatNumber(row.deaths)}</td>
+                <td className="px-3 py-1.5 text-right text-[#d4af37]">{formatCompact(row.killFame)}</td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-[#5b6b88]">
+                <td colSpan={4} className="px-3 py-6 text-center text-[#6b5d4a]">
                   Sin datos
                 </td>
               </tr>
@@ -68,9 +68,9 @@ function MiniTable({ title, rows, accent = 'cyan' }) {
 
 function ResultBadge({ result }) {
   const styles = {
-    victoria: 'bg-[#39ff14]/15 text-[#39ff14] border-[#39ff14]/40',
-    derrota: 'bg-[#ff3b6b]/15 text-[#ff3b6b] border-[#ff3b6b]/40',
-    empate: 'bg-[#ffd44d]/15 text-[#ffd44d] border-[#ffd44d]/40',
+    victoria: 'bg-[#3ecf6e]/15 text-[#3ecf6e] border-[#3ecf6e]/40',
+    derrota: 'bg-[#c23b4a]/15 text-[#c23b4a] border-[#c23b4a]/40',
+    empate: 'bg-[#d4af37]/15 text-[#d4af37] border-[#d4af37]/40',
   };
   const labels = { victoria: 'Victoria', derrota: 'Derrota', empate: 'Empate' };
   return (
@@ -86,15 +86,16 @@ function ResultBadge({ result }) {
 
 function tooltipStyle() {
   return {
-    backgroundColor: '#0b0f1a',
-    border: '1px solid #00f0ff55',
+    backgroundColor: '#16120e',
+    border: '1px solid #d4af3755',
     borderRadius: 8,
-    color: '#f4f7ff',
+    color: '#f5efe3',
   };
 }
 
 export default function Battles({ battles = [] }) {
   const [openId, setOpenId] = useState(battles[0]?.id ?? null);
+  const [board, setBoard] = useState('ours'); // ours | overall
   const openBattle = battles.find((b) => b.id === openId) || battles[0];
 
   const guildPie = useMemo(() => {
@@ -115,21 +116,7 @@ export default function Battles({ battles = [] }) {
   }, [openBattle]);
 
   const allianceBars = useMemo(() => {
-    const list = openBattle?.topAlliances || openBattle?.enemyAlliances || [];
-    if (!list.length && openBattle?.ourAlliance) {
-      return [
-        {
-          name: openBattle.ourAlliance.name,
-          kills: openBattle.ourAlliance.kills,
-          deaths: openBattle.ourAlliance.deaths,
-        },
-        ...(openBattle.enemyAlliances || []).map((a) => ({
-          name: a.name,
-          kills: a.kills,
-          deaths: a.deaths,
-        })),
-      ];
-    }
+    const list = openBattle?.topAlliances || [];
     return list.map((a) => ({
       name: a.name?.length > 12 ? `${a.name.slice(0, 12)}…` : a.name,
       kills: a.kills || 0,
@@ -140,101 +127,116 @@ export default function Battles({ battles = [] }) {
   return (
     <div className="space-y-4 animate-fade-up delay-4">
       <section className="panel rounded-lg overflow-hidden">
-        <header className="flex items-center gap-3 p-4 border-b border-[#1f2a44]">
-          <Shield className="w-5 h-5 text-[#00f0ff]" />
+        <header className="flex items-center gap-3 p-4 border-b border-[#3d3426]">
+          <Shield className="w-5 h-5 text-[#d4af37]" />
           <div>
-            <h2 className="font-[family-name:var(--font-display)] text-xl neon-text">
+            <h2 className="font-[family-name:var(--font-display)] text-xl gold-text">
               Batallas ZvZ · African Push
             </h2>
-            <p className="text-sm text-[#8b9bb8]">
-              Enfrentamientos gremio/alianza · resultado por K/D · gráficas solo de la pelea
+            <p className="text-sm text-[#a89b84]">
+              MVP, top kills / fame · alianza vs alianza · gráficas por pelea
             </p>
           </div>
         </header>
-        <div className="rgb-line" />
+        <div className="gold-line" />
 
-        <ul className="divide-y divide-[#1f2a44]/80">
+        <ul className="divide-y divide-[#3d3426]/80">
           {battles.map((b) => {
             const open = openId === b.id;
             const our = b.ourGuild;
+            const mvp = b.ourMvp;
 
             return (
               <li key={b.id}>
                 <button
                   type="button"
-                  onClick={() => setOpenId(open ? null : b.id)}
+                  onClick={() => {
+                    setOpenId(open ? null : b.id);
+                    setBoard('ours');
+                  }}
                   className={`w-full text-left px-4 py-3 transition ${
-                    open ? 'bg-[#00f0ff]/08' : 'hover:bg-white/[0.03]'
+                    open ? 'bg-[#d4af37]/08' : 'hover:bg-white/[0.03]'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <ResultBadge result={b.result || 'empate'} />
-                        <span className="text-xs text-[#8b9bb8]">{formatDate(b.startTime)}</span>
+                        <span className="text-xs text-[#a89b84]">{formatDate(b.startTime)}</span>
                         {b.clusterName ? (
-                          <span className="text-xs text-[#5b6b88] inline-flex items-center gap-1">
+                          <span className="text-xs text-[#6b5d4a] inline-flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             {b.clusterName}
+                          </span>
+                        ) : null}
+                        {mvp ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-[#ffd700] border border-[#d4af37]/40 rounded px-2 py-0.5">
+                            <Crown className="w-3 h-3" />
+                            MVP {mvp.name}
                           </span>
                         ) : null}
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Swords className="w-4 h-4 text-[#ff2bd6] shrink-0" />
-                        <p className="font-[family-name:var(--font-display)] text-sm sm:text-base text-[#f4f7ff]">
-                          <span className="text-[#00f0ff]">
-                            {b.matchup?.allianceVsAlliance
-                              ? b.matchup.allianceVsAlliance.split(' vs ')[0]
-                              : b.matchup?.usLabel || 'NULLE'}
+                        <Swords className="w-4 h-4 text-[#d4af37] shrink-0" />
+                        <p className="font-[family-name:var(--font-display)] text-sm sm:text-base">
+                          <span className="text-[#ffd700]">
+                            {b.matchup?.allianceVsAlliance?.split(' vs ')[0] ||
+                              b.matchup?.usLabel ||
+                              'NULLE'}
                           </span>
-                          <span className="text-[#8b9bb8] mx-2">vs</span>
-                          <span className="text-[#ff3b6b]">
-                            {b.matchup?.allianceVsAlliance
-                              ? b.matchup.allianceVsAlliance.split(' vs ')[1]
-                              : b.matchup?.themLabel || 'Enemigos'}
+                          <span className="text-[#6b5d4a] mx-2">vs</span>
+                          <span className="text-[#c23b4a]">
+                            {b.matchup?.allianceVsAlliance?.split(' vs ')[1] ||
+                              b.matchup?.themLabel ||
+                              'Enemigos'}
                           </span>
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8b9bb8]">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#a89b84]">
                         <span>
                           Alianzas:{' '}
-                          <span className="text-[#ffd44d]">
+                          <span className="text-[#d4af37]">
                             {b.matchup?.allianceVsAlliance || '—'}
                           </span>
                         </span>
                         <span>
                           Gremios:{' '}
-                          <span className="text-[#e5e7eb]">
+                          <span className="text-[#e8dcc3]">
                             {b.matchup?.guildVsGuild || '—'}
                           </span>
                         </span>
                         {b.matchup?.alliesNote ? (
-                          <span className="text-[#39ff14]">{b.matchup.alliesNote}</span>
+                          <span className="text-[#3ecf6e]">{b.matchup.alliesNote}</span>
                         ) : null}
                       </div>
 
                       <div className="flex flex-wrap gap-4 text-sm">
-                        <span className="text-[#ffd44d] font-semibold">
-                          {formatCompact(b.totalFame)} fame
+                        <span className="text-[#ffd700] font-semibold">
+                          {formatCompact(b.totalFame)} fame batalla
                         </span>
-                        <span className="text-[#39ff14]">
-                          {formatNumber(b.totalKills)} kills batalla
+                        <span className="text-[#3ecf6e]">
+                          {formatNumber(b.totalKills)} kills totales
                         </span>
                         <span>
                           Nosotros{' '}
-                          <span className="text-[#39ff14]">{formatNumber(our?.kills ?? 0)}K</span>
+                          <span className="text-[#3ecf6e]">
+                            {formatNumber(b.ourTotals?.kills ?? our?.kills ?? 0)}K
+                          </span>
                           {' / '}
-                          <span className="text-[#ff3b6b]">{formatNumber(our?.deaths ?? 0)}D</span>
-                        </span>
-                        <span className="text-[#8b9bb8]">
-                          {formatNumber(b.playerCount)}p · {formatNumber(b.guildCount)}g
+                          <span className="text-[#c23b4a]">
+                            {formatNumber(b.ourTotals?.deaths ?? our?.deaths ?? 0)}D
+                          </span>
+                          {' · '}
+                          <span className="text-[#d4af37]">
+                            {formatCompact(b.ourTotals?.killFame ?? our?.killFame ?? 0)} fame
+                          </span>
                         </span>
                       </div>
                     </div>
                     <ChevronDown
-                      className={`w-4 h-4 text-[#8b9bb8] shrink-0 mt-1 transition-transform ${
+                      className={`w-4 h-4 text-[#a89b84] shrink-0 mt-1 transition-transform ${
                         open ? 'rotate-180' : ''
                       }`}
                     />
@@ -242,39 +244,82 @@ export default function Battles({ battles = [] }) {
                 </button>
 
                 {open ? (
-                  <div className="px-4 pb-4 space-y-4 bg-[#05060a]/50">
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
-                      <div className="rounded border border-[#1f2a44] px-3 py-2">
-                        <p className="text-[10px] uppercase tracking-wider text-[#8b9bb8]">Resultado</p>
-                        <ResultBadge result={b.result || 'empate'} />
-                        <p className="text-xs text-[#8b9bb8] mt-1">
-                          K/D {our?.kills ?? 0}/{our?.deaths ?? 0}
-                        </p>
+                  <div className="px-4 pb-4 space-y-4 bg-[#0c0a08]/50">
+                    {mvp ? (
+                      <div className="rounded-lg border border-[#d4af37]/40 bg-[#d4af37]/08 p-4 flex flex-wrap items-center gap-4">
+                        <Crown className="w-8 h-8 text-[#ffd700]" />
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#d4af37]">
+                            MVP African Push
+                          </p>
+                          <p className="font-[family-name:var(--font-display)] text-xl gold-text">
+                            {mvp.name}
+                          </p>
+                          <p className="text-sm text-[#a89b84]">
+                            {formatNumber(mvp.kills)} kills · {formatNumber(mvp.deaths)} deaths ·{' '}
+                            <span className="text-[#ffd700]">{formatCompact(mvp.killFame)} fame</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="rounded border border-[#1f2a44] px-3 py-2">
-                        <p className="text-[10px] uppercase tracking-wider text-[#8b9bb8]">Nuestra alianza</p>
-                        <p className="text-[#00f0ff] font-semibold">
-                          {b.matchup?.allianceVsAlliance?.split(' vs ')[0] || b.matchup?.usLabel}
-                        </p>
-                        <p className="text-xs text-[#8b9bb8]">{b.ourGuild?.name}</p>
-                      </div>
-                      <div className="rounded border border-[#1f2a44] px-3 py-2">
-                        <p className="text-[10px] uppercase tracking-wider text-[#8b9bb8]">Alianza rival</p>
-                        <p className="text-[#ff3b6b] font-semibold">
-                          {b.matchup?.allianceVsAlliance?.split(' vs ')[1] || b.matchup?.themLabel}
-                        </p>
-                        <p className="text-xs text-[#8b9bb8]">{b.mainEnemyGuild?.name || '—'}</p>
-                      </div>
-                      <div className="rounded border border-[#1f2a44] px-3 py-2">
-                        <p className="text-[10px] uppercase tracking-wider text-[#8b9bb8]">Fin</p>
-                        <p>{formatDate(b.endTime)}</p>
-                      </div>
+                    ) : null}
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBoard('ours')}
+                        className={`px-3 py-1.5 text-xs uppercase tracking-wider rounded border ${
+                          board === 'ours'
+                            ? 'border-[#d4af37] text-[#ffd700] bg-[#d4af37]/10'
+                            : 'border-[#3d3426] text-[#a89b84]'
+                        }`}
+                      >
+                        Tops nuestros
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBoard('overall')}
+                        className={`px-3 py-1.5 text-xs uppercase tracking-wider rounded border ${
+                          board === 'overall'
+                            ? 'border-[#d4af37] text-[#ffd700] bg-[#d4af37]/10'
+                            : 'border-[#3d3426] text-[#a89b84]'
+                        }`}
+                      >
+                        Tops batalla
+                      </button>
                     </div>
 
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <MiniTable
+                        title={board === 'ours' ? 'Top kills (AP)' : 'Top kills (batalla)'}
+                        rows={
+                          board === 'ours'
+                            ? b.ourTopKillers ?? []
+                            : b.topKillersOverall ?? []
+                        }
+                        accent="kill"
+                      />
+                      <MiniTable
+                        title={
+                          board === 'ours'
+                            ? 'Top fame / “daño” (AP)'
+                            : 'Top fame / “daño” (batalla)'
+                        }
+                        rows={
+                          board === 'ours'
+                            ? (b.ourPlayers ?? []).slice(0, 5)
+                            : b.topFameOverall ?? []
+                        }
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#6b5d4a]">
+                      Nota: la API de batallas no envía daño numérico de skills; usamos{' '}
+                      <span className="text-[#d4af37]">Kill Fame</span> como métrica de contribución.
+                    </p>
+
                     <div className="grid lg:grid-cols-3 gap-4">
-                      <div className="h-64 rounded-lg border border-[#1f2a44] p-2">
-                        <p className="text-[11px] uppercase tracking-wider text-[#00f0ff] px-2 mb-1">
-                          Fame por gremio (esta batalla)
+                      <div className="h-64 rounded-lg border border-[#3d3426] p-2">
+                        <p className="text-[11px] uppercase tracking-wider text-[#d4af37] px-2 mb-1">
+                          Fame por gremio
                         </p>
                         <ResponsiveContainer width="100%" height="90%">
                           <PieChart>
@@ -288,7 +333,7 @@ export default function Battles({ battles = [] }) {
                               label={({ name }) => name}
                             >
                               {guildPie.map((_, i) => (
-                                <Cell key={i} fill={NEON[i % NEON.length]} />
+                                <Cell key={i} fill={GOLD_PALETTE[i % GOLD_PALETTE.length]} />
                               ))}
                             </Pie>
                             <Tooltip
@@ -299,44 +344,44 @@ export default function Battles({ battles = [] }) {
                         </ResponsiveContainer>
                       </div>
 
-                      <div className="h-64 rounded-lg border border-[#1f2a44] p-2">
-                        <p className="text-[11px] uppercase tracking-wider text-[#ff2bd6] px-2 mb-1">
+                      <div className="h-64 rounded-lg border border-[#3d3426] p-2">
+                        <p className="text-[11px] uppercase tracking-wider text-[#d4af37] px-2 mb-1">
                           K/D por gremio
                         </p>
                         <ResponsiveContainer width="100%" height="90%">
                           <BarChart data={guildBars}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3d3426" />
                             <XAxis
                               dataKey="name"
-                              stroke="#8b9bb8"
-                              tick={{ fill: '#8b9bb8', fontSize: 10 }}
+                              stroke="#a89b84"
+                              tick={{ fill: '#a89b84', fontSize: 10 }}
                             />
-                            <YAxis stroke="#8b9bb8" tick={{ fill: '#8b9bb8', fontSize: 11 }} />
+                            <YAxis stroke="#a89b84" tick={{ fill: '#a89b84', fontSize: 11 }} />
                             <Tooltip contentStyle={tooltipStyle()} />
                             <Legend />
-                            <Bar dataKey="kills" name="Kills" fill="#39ff14" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="deaths" name="Deaths" fill="#ff3b6b" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="kills" name="Kills" fill="#3ecf6e" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="deaths" name="Deaths" fill="#c23b4a" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
 
-                      <div className="h-64 rounded-lg border border-[#1f2a44] p-2">
-                        <p className="text-[11px] uppercase tracking-wider text-[#b6ff2e] px-2 mb-1">
+                      <div className="h-64 rounded-lg border border-[#3d3426] p-2">
+                        <p className="text-[11px] uppercase tracking-wider text-[#d4af37] px-2 mb-1">
                           K/D por alianza
                         </p>
                         <ResponsiveContainer width="100%" height="90%">
                           <BarChart data={allianceBars}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3d3426" />
                             <XAxis
                               dataKey="name"
-                              stroke="#8b9bb8"
-                              tick={{ fill: '#8b9bb8', fontSize: 10 }}
+                              stroke="#a89b84"
+                              tick={{ fill: '#a89b84', fontSize: 10 }}
                             />
-                            <YAxis stroke="#8b9bb8" tick={{ fill: '#8b9bb8', fontSize: 11 }} />
+                            <YAxis stroke="#a89b84" tick={{ fill: '#a89b84', fontSize: 11 }} />
                             <Tooltip contentStyle={tooltipStyle()} />
                             <Legend />
-                            <Bar dataKey="kills" name="Kills" fill="#00f0ff" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="deaths" name="Deaths" fill="#ff2bd6" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="kills" name="Kills" fill="#ffd700" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="deaths" name="Deaths" fill="#8a6d1d" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -349,11 +394,7 @@ export default function Battles({ battles = [] }) {
                         accent="kill"
                       />
                       <MiniTable title="Top gremios (fame)" rows={b.topGuilds ?? []} />
-                      <MiniTable
-                        title="Top players (fame)"
-                        rows={b.topPlayers ?? []}
-                        accent="magenta"
-                      />
+                      <MiniTable title="Top players (fame)" rows={b.topPlayers ?? []} />
                     </div>
                   </div>
                 ) : null}
@@ -362,7 +403,7 @@ export default function Battles({ battles = [] }) {
           })}
 
           {battles.length === 0 ? (
-            <li className="px-4 py-10 text-center text-[#5b6b88]">Sin batallas recientes.</li>
+            <li className="px-4 py-10 text-center text-[#6b5d4a]">Sin batallas recientes.</li>
           ) : null}
         </ul>
       </section>
