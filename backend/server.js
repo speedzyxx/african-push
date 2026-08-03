@@ -189,8 +189,12 @@ async function loadGuildEventsRaw(limit = 50) {
         includeServer: false,
       },
     ],
-    `guild-events-${limit}`
+    `guild-events-party-v1-${limit}`
   );
+}
+
+function gearSlotCount(equipment) {
+  return Object.values(equipment || {}).filter((s) => s?.uniqueName).length;
 }
 
 function mapEvent(event) {
@@ -202,6 +206,35 @@ function mapEvent(event) {
       }))
     : [];
 
+  // Party completa del killer (7/10/20...): GroupMembers + Killer
+  // Se enriquece con Participants si traen más slots de equipo
+  const partyById = new Map();
+  const upsertParty = (raw, role) => {
+    if (!raw?.Id && !raw?.Name) return;
+    const combatant = normalizeCombatant(raw);
+    if (!combatant?.id) return;
+    const slots = gearSlotCount(combatant.equipment);
+    const prev = partyById.get(combatant.id);
+    if (!prev || slots > gearSlotCount(prev.equipment)) {
+      partyById.set(combatant.id, { ...combatant, role, slots });
+    }
+  };
+
+  upsertParty(event.Killer, 'killer');
+  for (const member of event.GroupMembers ?? []) {
+    upsertParty(member, 'group');
+  }
+  // Participants a menudo traen set más completo → enriquecer mismos IDs
+  for (const p of event.Participants ?? []) {
+    if (partyById.has(p.Id)) upsertParty(p, partyById.get(p.Id).role);
+  }
+
+  const party = [...partyById.values()].sort((a, b) => {
+    if (a.role === 'killer') return -1;
+    if (b.role === 'killer') return 1;
+    return (b.slots || 0) - (a.slots || 0);
+  });
+
   return {
     eventId: event.EventId,
     timestamp: event.TimeStamp,
@@ -209,6 +242,9 @@ function mapEvent(event) {
     killer: normalizeCombatant(event.Killer),
     victim: normalizeCombatant(event.Victim),
     participants: (event.Participants ?? []).map(normalizeCombatant),
+    groupMembers: (event.GroupMembers ?? []).map(normalizeCombatant),
+    party,
+    partySize: party.length || event.groupMemberCount || 1,
     groupMemberCount: event.groupMemberCount ?? event.numberOfParticipants ?? 1,
     loot: victimInv.filter((i) => i.uniqueName),
     source: 'events',

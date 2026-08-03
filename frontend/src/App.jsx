@@ -22,7 +22,7 @@ const TABS = [
   { id: 'members', label: 'Miembros' },
   { id: 'kills', label: 'Killboard' },
   { id: 'battles', label: 'Batallas' },
-  { id: 'loot', label: 'Combat Loot' },
+  { id: 'loot', label: 'Combat' },
 ];
 
 export default function App() {

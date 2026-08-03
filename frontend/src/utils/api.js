@@ -31,10 +31,16 @@ export function formatNumber(n) {
 
 export function formatCompact(n) {
   if (n == null || Number.isNaN(n)) return '—';
-  return new Intl.NumberFormat('es-ES', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(n);
+  const abs = Math.abs(Number(n));
+  const sign = n < 0 ? '-' : '';
+  const fmt = (v) =>
+    v.toLocaleString('es-ES', { maximumFractionDigits: 1, minimumFractionDigits: 0 });
+  // Evita el "MIL M" raro del Intl compact en español
+  if (abs >= 1e12) return `${sign}${fmt(abs / 1e12)} T`;
+  if (abs >= 1e9) return `${sign}${fmt(abs / 1e9)} B`;
+  if (abs >= 1e6) return `${sign}${fmt(abs / 1e6)} M`;
+  if (abs >= 1e3) return `${sign}${fmt(abs / 1e3)} K`;
+  return formatNumber(n);
 }
 
 export function formatDate(iso) {

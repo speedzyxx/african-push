@@ -1,74 +1,139 @@
-import { itemImageUrl, formatCompact, formatDate, formatNumber } from '../utils/api';
+import { useState } from 'react';
+import { ChevronDown, Swords, Users } from 'lucide-react';
+import Equipment from './Equipment';
+import { formatDate, formatNumber, itemImageUrl } from '../utils/api';
 
 /**
- * Loot de combates = inventario de la víctima en eventos del killboard.
- * La API pública no da un "loot board" aparte; esto es lo más cercano.
+ * Combat de party completa (7/10/20…): todos los GroupMembers + Killer,
+ * aunque no sean del gremio. Enriquecido con Participants cuando hay más gear.
  */
 export default function CombatLoot({ events = [] }) {
-  const rows = events
-    .map((ev) => {
-      const loot = (ev.loot || ev.victimInventory || []).filter((i) => i?.uniqueName);
-      return {
-        eventId: ev.eventId,
-        timestamp: ev.timestamp,
-        fame: ev.totalFame,
-        killer: ev.killer?.name,
-        victim: ev.victim?.name,
-        loot,
-      };
-    })
-    .filter((r) => r.loot.length > 0);
+  const [openId, setOpenId] = useState(events[0]?.eventId ?? null);
+
+  const fights = events.filter((ev) => (ev.party?.length || 0) > 0 || ev.killer);
 
   return (
     <section className="panel rounded-lg overflow-hidden animate-fade-up">
       <header className="p-4 border-b border-[#3d3426]">
         <h2 className="font-[family-name:var(--font-display)] text-xl gold-text">
-          Combat Loot
+          Combat · Party
         </h2>
         <p className="text-sm text-[#a89b84]">
-          Ítems en inventario de la víctima (API killboard). No es un drop tracker oficial.
+          Sets de toda la party del kill (aliados incluidos, aunque no sean African Push).
+          Abajo: loot del inventario de la víctima.
         </p>
       </header>
 
-      <ul className="divide-y divide-[#3d3426]/80 max-h-[720px] overflow-y-auto">
-        {rows.map((r) => (
-          <li key={r.eventId} className="px-4 py-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-              <p className="text-sm">
-                <span className="text-[#3ecf6e] font-semibold">{r.killer}</span>
-                <span className="text-[#6b5d4a]"> → </span>
-                <span className="text-[#c23b4a] font-semibold">{r.victim}</span>
-              </p>
-              <p className="text-xs text-[#a89b84]">
-                {formatDate(r.timestamp)} · <span className="text-[#d4af37]">+{formatNumber(r.fame)}</span>
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {r.loot.slice(0, 16).map((item, idx) => (
-                <div
-                  key={`${r.eventId}-${item.uniqueName}-${idx}`}
-                  className="slot-frame w-12 h-12 rounded flex items-center justify-center"
-                  title={`${item.uniqueName}${item.count > 1 ? ` x${item.count}` : ''}`}
-                >
-                  <img
-                    src={itemImageUrl(item.uniqueName, item.quality)}
-                    alt={item.uniqueName}
-                    className="w-full h-full object-contain"
-                    loading="lazy"
+      <ul className="divide-y divide-[#3d3426]/80 max-h-[900px] overflow-y-auto">
+        {fights.map((ev) => {
+          const open = openId === ev.eventId;
+          const party = ev.party?.length
+            ? ev.party
+            : [ev.killer, ...(ev.groupMembers || [])].filter(Boolean);
+          const loot = (ev.loot || []).filter((i) => i?.uniqueName);
+
+          return (
+            <li key={ev.eventId}>
+              <button
+                type="button"
+                onClick={() => setOpenId(open ? null : ev.eventId)}
+                className={`w-full text-left px-4 py-3 transition ${
+                  open ? 'bg-[#d4af37]/08' : 'hover:bg-white/[0.03]'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#a89b84]">
+                      <span className="inline-flex items-center gap-1 text-[#d4af37] border border-[#d4af37]/35 rounded px-2 py-0.5">
+                        <Users className="w-3 h-3" />
+                        Party {ev.partySize || party.length}
+                      </span>
+                      <span>{formatDate(ev.timestamp)}</span>
+                      <span className="text-[#ffd700]">+{formatNumber(ev.totalFame)} fame</span>
+                    </div>
+                    <p className="text-sm">
+                      <span className="text-[#3ecf6e] font-semibold">{ev.killer?.name}</span>
+                      <span className="text-[#6b5d4a]"> y party → </span>
+                      <span className="text-[#c23b4a] font-semibold">{ev.victim?.name}</span>
+                      {ev.victim?.guildName ? (
+                        <span className="text-[#6b5d4a]"> ({ev.victim.guildName})</span>
+                      ) : null}
+                    </p>
+                    <p className="text-[11px] text-[#6b5d4a] truncate">
+                      {party.map((p) => p.name).join(' · ')}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#a89b84] shrink-0 transition-transform ${
+                      open ? 'rotate-180' : ''
+                    }`}
                   />
                 </div>
-              ))}
-              {r.loot.length > 16 ? (
-                <span className="text-xs text-[#a89b84] self-center">
-                  +{r.loot.length - 16} más · {formatCompact(r.loot.length)} ítems
-                </span>
+              </button>
+
+              {open ? (
+                <div className="px-4 pb-4 space-y-4 bg-[#0c0a08]/50">
+                  <div className="flex items-center gap-2 text-[#d4af37]">
+                    <Swords className="w-4 h-4" />
+                    <h3 className="font-[family-name:var(--font-display)] text-sm">
+                      Party atacante ({party.length})
+                    </h3>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {party.map((player) => (
+                      <Equipment
+                        key={player.id || player.name}
+                        player={{
+                          ...player,
+                          guildName:
+                            player.guildName ||
+                            (player.role === 'killer' ? 'Killer' : 'Party'),
+                        }}
+                        side="killer"
+                      />
+                    ))}
+                  </div>
+
+                  <div>
+                    <h3 className="font-[family-name:var(--font-display)] text-sm text-[#c23b4a] mb-2">
+                      Víctima
+                    </h3>
+                    <Equipment player={ev.victim} side="victim" />
+                  </div>
+
+                  {loot.length > 0 ? (
+                    <div>
+                      <h3 className="font-[family-name:var(--font-display)] text-sm text-[#d4af37] mb-2">
+                        Loot (inventario víctima · {loot.length} ítems)
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {loot.map((item, idx) => (
+                          <div
+                            key={`${ev.eventId}-loot-${idx}`}
+                            className="slot-frame w-12 h-12 rounded flex items-center justify-center"
+                            title={`${item.uniqueName}${item.count > 1 ? ` x${item.count}` : ''}`}
+                          >
+                            <img
+                              src={itemImageUrl(item.uniqueName, item.quality)}
+                              alt={item.uniqueName}
+                              className="w-full h-full object-contain"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
-            </div>
-          </li>
-        ))}
-        {rows.length === 0 ? (
+            </li>
+          );
+        })}
+
+        {fights.length === 0 ? (
           <li className="px-4 py-10 text-center text-[#6b5d4a]">
-            Sin loot de inventario en los eventos cargados.
+            Sin combates con party en los eventos cargados.
           </li>
         ) : null}
       </ul>
