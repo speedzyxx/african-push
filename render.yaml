@@ -1,12 +1,15 @@
 services:
   - type: web
     name: african-push-dashboard
-    runtime: docker
+    runtime: node
     plan: free
     region: oregon
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    # --include=dev: Vite/Tailwind están en devDependencies y Render pone NODE_ENV=production
+    buildCommand: npm install --prefix backend && npm install --prefix frontend --include=dev && npm run build --prefix frontend
+    startCommand: node backend/server.js
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
       - key: NODE_ENV
         value: production
