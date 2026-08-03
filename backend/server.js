@@ -189,7 +189,7 @@ async function loadGuildEventsRaw(limit = 50) {
         includeServer: false,
       },
     ],
-    `guild-events-party-loot-v2-${limit}`
+    `guild-events-party-loot-v3-${limit}`
   );
 }
 
@@ -240,6 +240,7 @@ function mapEvent(event) {
 
   return {
     eventId: event.EventId,
+    battleId: event.BattleId ?? null,
     timestamp: event.TimeStamp,
     totalFame: event.TotalVictimKillFame ?? 0,
     killer: normalizeCombatant(event.Killer),
@@ -251,6 +252,15 @@ function mapEvent(event) {
     partySize: party.length || event.groupMemberCount || 1,
     groupMemberCount: event.groupMemberCount ?? event.numberOfParticipants ?? 1,
     loot: victimInv.filter((i) => i.uniqueName),
+    // Equipo de la víctima (también suele perderse / ser relevante en el kill)
+    victimGear: Object.entries(normalizeCombatant(event.Victim)?.equipment || {})
+      .filter(([, item]) => item?.uniqueName)
+      .map(([slot, item]) => ({
+        slot,
+        uniqueName: item.uniqueName,
+        quality: item.quality ?? 0,
+        count: item.count ?? 1,
+      })),
     source: 'events',
   };
 }
