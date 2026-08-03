@@ -672,8 +672,8 @@ app.get(/^(?!\/api).*/, (req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Albion Guild API listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Albion Guild API listening on http://0.0.0.0:${PORT}`);
   console.log(`Guild ID: ${GUILD_ID}`);
   console.log(`Region server: ${ALBION_SERVER} (América West)`);
   console.log(`Cache TTL: ${CACHE_TTL}s`);

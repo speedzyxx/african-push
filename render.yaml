@@ -1,14 +1,14 @@
-# Exported from https://render.com/docs/blueprint-spec
 services:
   - type: web
     name: african-push-dashboard
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm run install:all && npm run build
-    startCommand: npm start
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
