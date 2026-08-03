@@ -189,7 +189,7 @@ async function loadGuildEventsRaw(limit = 50) {
         includeServer: false,
       },
     ],
-    `guild-events-party-v1-${limit}`
+    `guild-events-party-loot-v2-${limit}`
   );
 }
 
@@ -232,8 +232,11 @@ function mapEvent(event) {
   const party = [...partyById.values()].sort((a, b) => {
     if (a.role === 'killer') return -1;
     if (b.role === 'killer') return 1;
-    return (b.slots || 0) - (a.slots || 0);
+    return (b.damageDone || 0) - (a.damageDone || 0) || (b.slots || 0) - (a.slots || 0);
   });
+
+  // En Albion el Killer (golpe final) obtiene loot rights; la API no trae otro "looter"
+  const looter = normalizeCombatant(event.Killer);
 
   return {
     eventId: event.EventId,
@@ -241,6 +244,7 @@ function mapEvent(event) {
     totalFame: event.TotalVictimKillFame ?? 0,
     killer: normalizeCombatant(event.Killer),
     victim: normalizeCombatant(event.Victim),
+    looter,
     participants: (event.Participants ?? []).map(normalizeCombatant),
     groupMembers: (event.GroupMembers ?? []).map(normalizeCombatant),
     party,
@@ -732,6 +736,8 @@ function normalizeCombatant(player) {
     averageItemPower: Math.round(player.AverageItemPower ?? 0),
     killFame: player.KillFame ?? 0,
     deathFame: player.DeathFame ?? 0,
+    damageDone: Math.round(player.DamageDone ?? 0),
+    supportHealingDone: Math.round(player.SupportHealingDone ?? 0),
     equipment: gear,
   };
 }
