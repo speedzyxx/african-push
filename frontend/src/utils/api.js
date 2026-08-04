@@ -1,10 +1,33 @@
 const API_BASE = '';
 
+function friendlyError(status, body = {}) {
+  const detail = body.detail || body.error || '';
+  if (
+    status === 504 ||
+    /504|timeout|gateway time-?out/i.test(detail)
+  ) {
+    return 'Albion está lento o caído (timeout). Espera 1–2 min y pulsa Actualizar.';
+  }
+  if (status === 429 || /rate.?limit/i.test(detail)) {
+    return 'Demasiadas peticiones a Albion. Espera un momento y reintenta.';
+  }
+  if (status === 502 || /no se pudo obtener/i.test(detail)) {
+    return detail.length < 200
+      ? detail
+      : 'Albion no responde ahora. Reintenta en unos minutos.';
+  }
+  // Evita pegar HTML de Cloudflare en la UI
+  if (/<html|cloudflare|origin_gateway/i.test(detail)) {
+    return 'Albion API no disponible temporalmente. Reintenta en 1–2 min.';
+  }
+  return detail || `HTTP ${status}`;
+}
+
 async function request(path) {
   const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || body.error || `HTTP ${res.status}`);
+    throw new Error(friendlyError(res.status, body));
   }
   return res.json();
 }

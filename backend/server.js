@@ -11,8 +11,12 @@ const GUILD_ID = 'ePXF6hJYSkajVrQofuxNYg';
 /** América West — requerido por killboard / region lock de la API */
 const ALBION_SERVER = 'live_us';
 const CACHE_TTL = 300; // 5 minutos
+const STALE_TTL = 60 * 60; // 1h de respaldo si Albion cae (504)
+const FETCH_RETRIES = 3;
+const RETRYABLE = new Set([408, 425, 429, 502, 503, 504]);
 
 const cache = new NodeCache({ stdTTL: CACHE_TTL, checkperiod: 60 });
+const staleCache = new NodeCache({ stdTTL: STALE_TTL, checkperiod: 120 });
 
 app.use(cors());
 app.use(express.json());
@@ -27,15 +31,30 @@ function buildAlbionUrl(path) {
   return url.toString();
 }
 
-async function fetchAlbion(path, cacheKey, options = {}) {
-  const { includeServer = true, ttl } = options;
-  const regionKey = `${cacheKey}:${includeServer ? ALBION_SERVER : 'default'}`;
-  const cached = cache.get(regionKey);
-  if (cached) {
-    return { data: cached, fromCache: true, url: '(cache)' };
-  }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  const url = includeServer ? buildAlbionUrl(path) : `${ALBION_API}${path}`;
+/** Extrae mensaje corto de HTML/JSON de Cloudflare / Albion */
+function shortenAlbionError(status, text = '') {
+  const raw = String(text);
+  if (/504|gateway time-?out/i.test(raw) || status === 504) {
+    return 'Albion API timeout (504). El servidor de Albion no responde; reintenta en 1–2 min.';
+  }
+  if (status === 503 || /service unavailable/i.test(raw)) {
+    return 'Albion API no disponible (503). Reintenta en unos minutos.';
+  }
+  if (status === 429 || /rate.?limit/i.test(raw)) {
+    return 'Albion API rate limit (429). Espera un momento y reintenta.';
+  }
+  const title = raw.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+  if (title) return `Albion API ${status}: ${title}`;
+  const clean = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (clean.length > 0 && clean.length < 180) return `Albion API ${status}: ${clean}`;
+  return `Albion API ${status}`;
+}
+
+async function fetchAlbionOnce(url) {
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -45,21 +64,66 @@ async function fetchAlbion(path, cacheKey, options = {}) {
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    const err = new Error(
-      `Albion API ${response.status}${includeServer ? ` (${ALBION_SERVER})` : ''}: ${text || response.statusText}`
-    );
+    const err = new Error(shortenAlbionError(response.status, text));
     err.status = response.status;
     err.url = url;
+    err.retryable = RETRYABLE.has(response.status);
+    const retryAfter = Number(
+      response.headers.get('retry-after') ||
+        text.match(/"retry_after"\s*:\s*(\d+)/)?.[1] ||
+        0
+    );
+    if (retryAfter > 0) err.retryAfter = retryAfter;
     throw err;
   }
 
-  const data = await response.json();
-  if (typeof ttl === 'number') {
-    cache.set(regionKey, data, ttl);
-  } else {
-    cache.set(regionKey, data);
+  return response.json();
+}
+
+async function fetchAlbion(path, cacheKey, options = {}) {
+  const { includeServer = true, ttl } = options;
+  const regionKey = `${cacheKey}:${includeServer ? ALBION_SERVER : 'default'}`;
+  const cached = cache.get(regionKey);
+  if (cached) {
+    return { data: cached, fromCache: true, url: '(cache)' };
   }
-  return { data, fromCache: false, url };
+
+  const url = includeServer ? buildAlbionUrl(path) : `${ALBION_API}${path}`;
+  let lastError;
+
+  for (let attempt = 1; attempt <= FETCH_RETRIES; attempt += 1) {
+    try {
+      const data = await fetchAlbionOnce(url);
+      const storeTtl = typeof ttl === 'number' ? ttl : CACHE_TTL;
+      cache.set(regionKey, data, storeTtl);
+      staleCache.set(regionKey, data);
+      return { data, fromCache: false, url };
+    } catch (error) {
+      lastError = error;
+      const canRetry = error.retryable !== false && attempt < FETCH_RETRIES;
+      if (!canRetry) break;
+      const waitMs = Math.min(
+        4000,
+        (error.retryAfter
+          ? Math.min(error.retryAfter, 4) * 1000
+          : 1200 * attempt) + Math.floor(Math.random() * 300)
+      );
+      console.warn(
+        `[fetchAlbion] ${error.status || '?'} attempt ${attempt}/${FETCH_RETRIES}, wait ${waitMs}ms`,
+        url
+      );
+      await sleep(waitMs);
+    }
+  }
+
+  const stale = staleCache.get(regionKey);
+  if (stale) {
+    console.warn(`[fetchAlbion] sirviendo stale cache para ${regionKey}`);
+    cache.set(regionKey, stale, Math.min(60, CACHE_TTL));
+    return { data: stale, fromCache: true, stale: true, url: '(stale-cache)' };
+  }
+
+  throw lastError;
 }
 
 /**
@@ -85,9 +149,11 @@ async function fetchAlbionFirst(attempts, cacheKey) {
 
 function sendError(res, error) {
   console.error(error);
-  res.status(502).json({
+  const status = error.status === 429 ? 429 : error.status === 504 ? 504 : 502;
+  res.status(status).json({
     error: 'No se pudo obtener datos de Albion Online',
-    detail: error.message,
+    detail: shortenAlbionError(error.status || status, error.message),
+    retryable: Boolean(error.retryable ?? RETRYABLE.has(error.status)),
   });
 }
 

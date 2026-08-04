@@ -164,8 +164,21 @@ export default function App() {
 
         {error ? (
           <div className="panel rounded-lg border border-[#c23b4a]/50 p-4 text-[#f5a8b0]">
-            <p className="font-semibold">Error al cargar la API</p>
-            <p className="text-sm mt-1 opacity-90">{error}</p>
+            <p className="font-semibold">Albion API temporalmente caída</p>
+            <p className="text-sm mt-1 opacity-90 max-w-3xl">{error}</p>
+            <button
+              type="button"
+              onClick={loadAll}
+              disabled={loading}
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#c23b4a]/40 text-xs uppercase tracking-wider hover:bg-[#c23b4a]/15 disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              Reintentar ahora
+            </button>
           </div>
         ) : null}
 
